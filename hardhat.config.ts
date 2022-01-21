@@ -10,7 +10,15 @@ import "solidity-coverage";
 dotenv.config();
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.11",
+  solidity: {
+    version: "0.8.11",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 1024,
+      },
+    },
+  },
   networks: {
     rinkeby: {
       url: process.env.RPC_URL_RINKEBY || "",
@@ -30,6 +38,7 @@ const config: HardhatUserConfig = {
   gasReporter: {
     enabled: process.env.REPORT_GAS !== undefined,
     currency: "USD",
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY || "",
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
