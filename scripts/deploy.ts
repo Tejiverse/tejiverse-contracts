@@ -1,12 +1,25 @@
 import { ethers } from "hardhat";
 
-async function main() {
-  const greeter = await (
-    await ethers.getContractFactory("Greeter")
-  ).deploy("Hello, World!");
+import getTree from "../src/getTree";
 
-  await greeter.deployed();
-  console.log("Greeter: ", greeter.address);
+async function main() {
+  const tree = getTree();
+
+  const tejiverseImpl = await (
+    await ethers.getContractFactory("Tejiverse")
+  ).deploy();
+  await tejiverseImpl.deployed();
+  console.log("Tejiverse Implementation:", tejiverseImpl.address);
+
+  const proxy = await (
+    await ethers.getContractFactory("Proxy")
+  ).deploy(tejiverseImpl.address);
+  await proxy.deployed();
+  console.log("Tejiverse:", proxy.address);
+
+  await (
+    await ethers.getContractAt("Tejiverse", proxy.address)
+  ).initalize("", tree.getHexRoot());
 }
 
 main().catch((error) => {

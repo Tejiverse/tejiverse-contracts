@@ -13,7 +13,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /**
  * @title Tejiverse
- * @author naomsa <https://twitter.com/naomsa666> & Teji <https://twitter.com/0xTeji>
+ * @author naomsa <https://twitter.com/naomsa666>
+ * @author Teji <https://twitter.com/0xTeji>
  */
 contract Tejiverse is Upgradable, ERC721Upgradable {
   using Strings for uint256;
