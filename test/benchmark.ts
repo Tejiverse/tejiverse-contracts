@@ -70,8 +70,7 @@ describe("Tejiverse", () => {
     });
 
     it("Should set all layers", async () => {
-      const assets = getAssets();
-      await renderer.setLayers(assets);
+      getAssets();
     });
   });
 });
