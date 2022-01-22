@@ -4,7 +4,8 @@ import MerkleTree from "merkletreejs";
 import keccak256 from "keccak256";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-import { Tejiverse } from "../typechain";
+import { Tejiverse, TejiverseRenderer } from "../typechain";
+import getLayers from "../src/getLayers";
 
 function hashAccount(account: string) {
   return Buffer.from(
@@ -14,8 +15,9 @@ function hashAccount(account: string) {
 }
 
 describe("Tejiverse", () => {
+  let [owner, addr1]: SignerWithAddress[] = [];
+
   describe("NFT", () => {
-    let [owner, addr1]: SignerWithAddress[] = [];
     let tree: MerkleTree;
     let tejiverse: Tejiverse;
 
@@ -147,6 +149,28 @@ describe("Tejiverse", () => {
           ),
         ).to.be.revertedWith("Invalid proof");
       });
+    });
+  });
+
+  describe("Renderer", () => {
+    let renderer: TejiverseRenderer;
+
+    beforeEach(async () => {
+      [owner, addr1] = await ethers.getSigners();
+
+      renderer = await (
+        await ethers.getContractFactory("TejiverseRenderer")
+      ).deploy();
+    });
+
+    it("Should set layers", async () => {
+      const layers = getLayers();
+      await renderer.setLayers(layers.slice(0, 10));
+
+      for (let i = 0; i < 10; i++) {
+        expect((await renderer.getLayer(0, i)).name).to.equal(layers[i].name);
+        expect((await renderer.getLayer(0, i)).data).to.equal(layers[i].data);
+      }
     });
   });
 });

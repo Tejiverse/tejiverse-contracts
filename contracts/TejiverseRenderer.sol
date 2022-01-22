@@ -4,84 +4,67 @@ pragma solidity >=0.8.0 <0.9.0;
 import "@0xsequence/sstore2/contracts/SSTORE2.sol";
 
 contract TejiverseRenderer {
-  address[] internal _layerHexStrings;
-  address[] internal _layerLayerIndexes;
-  address[] internal _layerItemIndexes;
-  string[] internal _layerNames;
+  address[][4] internal _layerData;
+  mapping(uint256 => string)[4] internal _layerNames;
 
   struct Layer {
     string name;
-    bytes hexString;
+    string data;
   }
 
-  struct LayerInputConcat {
-    string[] name;
-    bytes hexString;
-    bytes layerIndex;
-    bytes itemIndex;
+  struct LayerInput {
+    string name;
+    string data;
+    uint8 layerIndex;
+    uint8 itemIndex;
   }
 
-  function setLayers(LayerInputConcat[] memory layers) external {
-    for (uint8 i = 0; i < layers.length; i++) {
-      for (uint8 j = 0; j < layers[i].name.length; j++) {
-        _layerNames.push(layers[i].name[j]);
-      }
-      _layerHexStrings.push(SSTORE2.write(layers[i].hexString));
-      _layerLayerIndexes.push(SSTORE2.write(layers[i].layerIndex));
-      _layerItemIndexes.push(SSTORE2.write(layers[i].itemIndex));
+  struct Teji {
+    uint8 clothes;
+    uint8 eyes;
+    uint8 hat;
+    uint8 mouth;
+    uint8 background;
+  }
+
+  function setLayers(LayerInput[] memory toSet) external {
+    for (uint16 i = 0; i < toSet.length; i++) {
+      _layerData[toSet[i].layerIndex][toSet[i].itemIndex] = SSTORE2.write(bytes(toSet[i].data));
+      _layerNames[toSet[i].layerIndex][toSet[i].itemIndex] = toSet[i].name;
     }
   }
 
   function getLayer(uint8 layerIndex, uint8 itemIndex) public view returns (Layer memory) {
-    // storageIndex is the index of the SSTORE2 containing the data
-    uint8 storageIndex = 0;
-    bytes memory layerIndexes = SSTORE2.read(_layerLayerIndexes[storageIndex]);
-    uint8 lastLayerIndex = uint8(layerIndexes[layerIndexes.length - 1]);
+    return Layer(_layerNames[layerIndex][itemIndex], string(SSTORE2.read(_layerData[layerIndex][itemIndex])));
+  }
 
-    // Since layerIndexes are sorted, we only look at the last byte to check if this storageIndex
-    // is the one we are looking for
-    while (lastLayerIndex < layerIndex) {
-      storageIndex++;
-      layerIndexes = SSTORE2.read(_layerLayerIndexes[storageIndex]);
-      lastLayerIndex = uint8(layerIndexes[layerIndexes.length - 1]);
-    }
+  function getTeji(uint256 dna) public view returns (Teji memory t) {
+    t.clothes = uint8(dna % _layerData[0].length);
+    t.eyes = uint8(dna >> 16 % _layerData[1].length);
+    t.hat = uint8(dna >> 32 % _layerData[2].length);
+    t.mouth = uint8(dna >> 64 % _layerData[3].length);
+    t.background = uint8(dna >> 64 % 3);
+  }
 
-    // Load the corresponding item indexes for the given storageIndex
-    bytes memory itemIndexes = SSTORE2.read(_layerItemIndexes[storageIndex]);
+  function tokenURI(uint256 id, bytes memory dna) external view returns (string memory) {}
 
-    // Actually the items for this layerIndex may be split between this storageIndex and the one after
-    // So we check if the itemIndex is in the range of the itemIndexes for this storageIndex
-    if (lastLayerIndex == layerIndex) {
-      if (itemIndex > uint8(itemIndexes[itemIndexes.length - 1])) {
-        storageIndex++;
-        layerIndexes = SSTORE2.read(_layerLayerIndexes[storageIndex]);
-        itemIndexes = SSTORE2.read(_layerItemIndexes[storageIndex]);
-      }
-    }
+  function tokenSVG(uint256 id, bytes memory dna) external view returns (string memory) {}
 
-    uint8 currentStorageShiftCount = 0;
-    while (uint8(layerIndexes[currentStorageShiftCount]) < layerIndex) {
-      currentStorageShiftCount++;
-    }
-    while (
-      (uint8(itemIndexes[currentStorageShiftCount]) < itemIndex) &&
-      (uint8(layerIndexes[currentStorageShiftCount]) == layerIndex)
-    ) {
-      currentStorageShiftCount++;
-    }
-    if (uint8(itemIndexes[currentStorageShiftCount]) < itemIndex) {
-      // Layer not found, return empty layer to match ChainRunnersBaseRenderer empty layer with mapping
-      return Layer("", "");
-    }
+  function _genAttribute(string memory _type, string memory _value) internal pure returns (string memory) {
+    /* solhint-disable-next-line */
+    return string(abi.encodePacked('{"trait_type": "', _type, '", "value": "', _value, '"}'));
+  }
 
-    bytes memory storageHexStrings = SSTORE2.read(_layerHexStrings[storageIndex]);
-    bytes memory hexString = new bytes(416);
-    for (uint16 i = 0; i < 416; i++) {
-      hexString[i] = storageHexStrings[i + 416 * currentStorageShiftCount];
-    }
-
-    uint16 nameIndex = uint16(storageIndex) * 57 + uint16(currentStorageShiftCount);
-    string memory name = _layerNames[nameIndex];
-    return Layer(name, hexString);
+  function _genImage(string memory _png) internal pure returns (string memory) {
+    /* solhint-disable */
+    return
+      string(
+        abi.encodePacked(
+          '<image x="0" y="0" width="32" height="32" image-rendering="pixelated" preserveAspectRatio="xMidYMid" xlink:href="data:image/png;base64,',
+          _png,
+          '"/>'
+        )
+      );
+    /* solhint-disable */
   }
 }

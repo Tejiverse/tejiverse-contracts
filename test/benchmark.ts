@@ -4,7 +4,7 @@ import keccak256 from "keccak256";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import { Tejiverse, TejiverseRenderer } from "../typechain";
-import getAssets from "../src/getAssets";
+import getLayers from "../src/getLayers";
 
 function hashAccount(account: string) {
   return Buffer.from(
@@ -69,8 +69,11 @@ describe("Tejiverse", () => {
       ).deploy();
     });
 
-    it("Should set all layers", async () => {
-      getAssets();
+    it("setLayers()", async () => {
+      const layers = getLayers();
+      for (let i = 0; i < layers.length; i += 20) {
+        await renderer.setLayers(layers.slice(i, i + 20));
+      }
     });
   });
 });
