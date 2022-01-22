@@ -2,6 +2,19 @@
 # yarn lockfile v1
 
 
+"@0xsequence/create3@https://github.com/0xsequence/create3.git":
+  version "3.0.0"
+  resolved "https://github.com/0xsequence/create3.git#606096fd114f8996131c0b395a3b42625c3cab47"
+  dependencies:
+    csv-writer "^1.6.0"
+
+"@0xsequence/sstore2@https://github.com/0xsequence/sstore2":
+  version "1.1.0"
+  resolved "https://github.com/0xsequence/sstore2#0a28fe61b6e81de9a05b462a24b9f4ba8c70d5b7"
+  dependencies:
+    "@0xsequence/create3" "https://github.com/0xsequence/create3.git"
+    csv-writer "^1.6.0"
+
 "@babel/code-frame@7.12.11":
   version "7.12.11"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.12.11.tgz#f4ad435aa263db935b8f10f2c552d23fb716a63f"
@@ -3266,6 +3279,11 @@ crypto-js@^3.1.9-1:
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/crypto-js/-/crypto-js-3.3.0.tgz#846dd1cce2f68aacfa156c8578f926a609b7976b"
   integrity sha512-DIT51nX0dCfKltpRiXV+/TVZq+Qq2NgF4644+K7Ttnla7zEzqc+kjJyiB96BHNyUTBxyjzRcZYpUdZa+QAqi6Q==
+
+csv-writer@^1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/csv-writer/-/csv-writer-1.6.0.tgz#d0cea44b6b4d7d3baa2ecc6f3f7209233514bcf9"
+  integrity sha512-NOx7YDFWEsM/fTRAJjRpPp8t+MKRVvniAg9wQlUKx20MFrPs73WLJhFf5iteqrxNYnsy924K3Iroh3yNHeYd2g==
 
 cz-conventional-changelog@3.2.0:
   version "3.2.0"

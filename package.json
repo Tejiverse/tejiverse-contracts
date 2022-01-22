@@ -19,6 +19,7 @@
     "postpublish": "pinst --enable"
   },
   "devDependencies": {
+    "@0xsequence/sstore2": "https://github.com/0xsequence/sstore2",
     "@commitlint/cli": "^15.0.0",
     "@commitlint/config-conventional": "^15.0.0",
     "@nomiclabs/hardhat-ethers": "^2.0.0",
