@@ -12,9 +12,9 @@ export default function getLayers(): LayerInput[] {
 
   for (const [layerIndex, traitName] of [
     "Clothes",
+    "Mouth",
     "Eyes",
     "Hat",
-    "Mouth",
   ].entries()) {
     const dirpath = path.resolve(__dirname, "../assets", traitName);
     const files = fs.readdirSync(dirpath);

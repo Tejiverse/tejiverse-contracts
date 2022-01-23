@@ -95,6 +95,30 @@ contract TejiverseRenderer is Upgradable {
         : "Underpants";
   }
 
+  /// @notice Get mouth name.
+  function getMouthName(uint8 index) public pure returns (string memory) {
+    return
+      index == 0 ? "Bite" : index == 1 ? "Bubblegum" : index == 2 ? "Buck teeth" : index == 3 ? "Chicken" : index == 4
+        ? "Cigarette"
+        : index == 5
+        ? "Grin"
+        : index == 6
+        ? "Grr"
+        : index == 7
+        ? "Infected"
+        : index == 8
+        ? "Lipstick"
+        : index == 9
+        ? "Meh"
+        : index == 10
+        ? "Moustache"
+        : index == 11
+        ? "Normal"
+        : index == 12
+        ? "Sad boy"
+        : "Wazzuupp";
+  }
+
   /// @notice Get eyes name.
   function getEyesName(uint8 index) public pure returns (string memory) {
     return
@@ -171,37 +195,13 @@ contract TejiverseRenderer is Upgradable {
         : "Wounded";
   }
 
-  /// @notice Get mouth name.
-  function getMouthName(uint8 index) public pure returns (string memory) {
-    return
-      index == 0 ? "Bite" : index == 1 ? "Bubblegum" : index == 2 ? "Buck teeth" : index == 3 ? "Chicken" : index == 4
-        ? "Cigarette"
-        : index == 5
-        ? "Grin"
-        : index == 6
-        ? "Grr"
-        : index == 7
-        ? "Infected"
-        : index == 8
-        ? "Lipstick"
-        : index == 9
-        ? "Meh"
-        : index == 10
-        ? "Moustache"
-        : index == 11
-        ? "Normal"
-        : index == 12
-        ? "Sad boy"
-        : "Wazzuupp";
-  }
-
   /// @notice Get Teji structure data by given `dna`.
   function getTeji(uint256 dna) public pure returns (TejiverseTypes.Teji memory t) {
     t.background = uint8((dna >> 8) % 5);
     t.clothes = uint8((dna >> 16) % 27);
-    t.eyes = uint8((dna >> 32) % 27);
-    t.hat = uint8((dna >> 64) % 15);
-    t.mouth = uint8((dna >> 128) % 14);
+    t.mouth = uint8((dna >> 32) % 14);
+    t.eyes = uint8((dna >> 64) % 27);
+    t.hat = uint8((dna >> 128) % 15);
   }
 
   /// @notice Retrieve tokenURI for given token `id` and `dna`.
@@ -242,9 +242,9 @@ contract TejiverseRenderer is Upgradable {
                 _genBackground(teji.background),
                 '<image x="0" y="0" width="32" height="32" image-rendering="pixelated" preserveAspectRatio="xMidYMid" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAABVxJREFUWEfFln1MVWUcxz/P4XIvoJCaYoAs0GZm459oWTmDbNakcpbv6cqQNyesFbgpGfdeLHALcg0QleZLQ4dvYU10zunM5nQ2qz+yrGYwEV/DtyvCucB92jnnXu6Fe69y+cdnOzt35z7n+X1+39/395xH8IiHeMTxGRJAmIU3exUi6fXBF3Si0hRqQqEDhPMCCoeZmT+iX7BD1bdx8QbdnAkFInQAEzbxbqFVLq2AehsgYYkdthXBd5V2etAeDnoEBgjnfRSm6QWS2qVcwekq0Vc1YWN7q5WR4yBD0SeIgxJ58xIsTfQCmClFENe3houf6ObbgWQDARQsfIKiWFl7YjijE+DOdVg9tZvengOozMdEMWMTbdReELRfAi3C6ARE3gQpr7Xa6KEMM7sxmd6i/GQ4j8VCexusSbuHq9eOyleAywPSH8BCPiZzFcs3wfSl+hxdhLbzUJgK6v0fUUnHwnngaRo1eYB39GX+QmUSFo5jiUqj8iwkTHIvABzbBrW50OMsQKU6OMBCWxULrCAktF9FKApy+OPwyyEom3UKZ9QcuC+w0MaWy8Y6mQmgygS9Hmaxj+LvXyJ1JjjaQbpg5BNGIrtKocEWHECxkO+auaKKxZ+DJQrmWRAxY5AFW+DL+RCb5FVFN0cQD19vgZW7oSoT7t5A7OlCqp2IHWuQTTUFdAdRIMzMnF6F9eRtTmT6h1A8FZp/hQnPw5Mp6KVxD48/+5nK83BDDlz8HXHhZ2Tyc1B+Eo5thQ05rSh8TCf7ApdAe2rGzuyiEhaVwrnjUL0MtraBFN56DrCyJ65HD7czIDMO8rfAs69Cw2fQWFGKE6vv6/4aRpCOiwoyVqRypA4Wl8HswgEhHyC/PlMiEMj9lbCjGGZkw8GasygU0cXxBwMY/44gQruim9l5N3BwzaSaB/rSDbL3vBcDtx3JwG335Ve1wG9aaCYyOskA8GYskHp+nhbV8w1oCLdHF8VAl6OFLjQIvxF8Kx5mbmavmqTFFlqifZk+TP4AUeZZWuhwDgFgT1dSsFbzJfergq8i2u+5QwZQjcb3mGpgcgGl90jmM3koCgitBJuak+So+ACaul3uMUI/CTwlct9vXYac5NBLoFgodJnMFcwp7gN44OYTpAnYVw49ahEqlSGZUIlglys8cj5rmnQX9gX3o/BRw/Px8ty1uaUZ0N25my4WhARAVHizKDuRJCe+6POeVl933/mA+Cvj07Z/n4biaars6bHhZF0gG/mDmSgV5vBVcq8z3HcPCKay1wpBWvS3I2B//RtUsgcHEEGdWHc6S06cYsx3p2gkL907j9Edfm0ayCjX/oW8CSEAWKhj2Igs6m95az8wmOICl3Yke8hYFgcdDlA7QgCAMCI5IcIsL8tRCWAyo5tRV8N3W/Z+CvTED3wNpxrBHGHMbW9FOLsuSpVnABX6HeT7xA3kgWmEMZnI6I3UXYLthUE/xX4vz14J8RONx5nxcOtKAZL/cNIwuC6IIF24qJBvf5SqHyjneveBvgUa10Onw3+9lFcgJd1btv0Vxry9X7TQ2TvIb4EJO+mLS1heC5HRcP8O/FANCz81VDjTxPCOf1DMJj8A9doN1ClLIP4paCiDWQUQFQPzzA66u/NwsvPhXWDCLgrqSuSMLMPlN6/C6tdg0znD8fVWxmRnYxo7rv9aAu7V2HEkpkNKGuROhvKjMCoODm+GjbmDNKF2JFtRV4IOANy84gb4wzDNDiujs7IJG5ugn3o8Q2vPjpq1OBLT/AGuN0Pu+FABlhkZawCrpsPmP41Y9VaUnA+IjR3vdya+V2vHMc6rgCg/itQU0E7JuckBAf4HyQvnMOoPw/UAAAAASUVORK5CYII="/>',
                 _genImage(0, teji.clothes),
-                _genImage(1, teji.eyes),
-                _genImage(2, teji.hat),
-                _genImage(3, teji.mouth),
+                _genImage(1, teji.mouth),
+                _genImage(2, teji.eyes),
+                _genImage(3, teji.hat),
                 "<style>#teji{shape-rendering: crispedges; image-rendering: -webkit-crisp-edges; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; image-rendering: pixelated; -ms-interpolation-mode: nearest-neighbor;}</style></svg>"
               )
             )

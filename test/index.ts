@@ -146,6 +146,7 @@ describe("Tejiverse", () => {
         hat: 0,
         mouth: 0,
       });
+
       expect(svg.startsWith("data:image/svg+xml;base64,")).to.be.true;
     });
   });
@@ -162,7 +163,7 @@ describe("Tejiverse", () => {
         },
         123,
       );
-      console.log(uri);
+
       expect(uri.startsWith("data:application/json;base64,")).to.be.true;
     });
   });
