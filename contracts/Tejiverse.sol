@@ -130,9 +130,10 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
     unrevealedURI = newUnrevealedURI;
   }
 
-  /// @notice Set seed to a pseudo-random number.
+  /// @notice Set seed to a pseudo-random number and trigger the reveal.
   function setSeed() external onlyOwner {
     seed = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)));
+    delete unrevealedURI;
   }
 
   /// @notice Set saleState to `newSaleState`.

@@ -4,8 +4,8 @@ import keccak256 from "keccak256";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import { Tejiverse, TejiverseRenderer } from "../typechain";
-import unrevealedURI from "../assets/unrevealed.json";
 import getLayers from "../src/getLayers";
+import deployProxy from "../src/deployProxy";
 
 function hashAccount(account: string) {
   return Buffer.from(
@@ -30,20 +30,16 @@ describe("Tejiverse", () => {
         { sortPairs: true },
       );
 
-      const tejiverseImpl = await (
-        await ethers.getContractFactory("Tejiverse")
-      ).deploy();
-
-      const proxy = await (
-        await ethers.getContractFactory("Proxy")
-      ).deploy(tejiverseImpl.address);
-
-      tejiverse = await ethers.getContractAt("Tejiverse", proxy.address);
-      await tejiverse.initalize(
-        JSON.stringify(unrevealedURI),
-        tree.getHexRoot(),
-      );
+      tejiverse = (await deployProxy("Tejiverse")) as Tejiverse;
       tejiverse = tejiverse.connect(addr1);
+
+      await tejiverse
+        .connect(owner)
+        .initalize(
+          "0x0000000000000000000000000000000000000000",
+          "",
+          tree.getHexRoot(),
+        );
     });
 
     it("claim()", async () => {
@@ -68,16 +64,13 @@ describe("Tejiverse", () => {
     beforeEach(async () => {
       [owner, addr1] = await ethers.getSigners();
 
-      renderer = await (
-        await ethers.getContractFactory("TejiverseRenderer")
-      ).deploy();
+      renderer = (await deployProxy("TejiverseRenderer")) as TejiverseRenderer;
     });
 
     it("setLayers()", async () => {
       const layers = getLayers();
-      for (let i = 0; i < layers.length; i += 10) {
-        console.log(i);
-        await renderer.setLayers(layers.slice(i, i + 10));
+      for (let i = 0; i < layers.length; i += layers.length / 4) {
+        await renderer.setLayers(layers.slice(i, i + layers.length / 4));
       }
     });
   });
