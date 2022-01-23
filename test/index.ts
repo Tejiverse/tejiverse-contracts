@@ -130,12 +130,9 @@ describe("Tejiverse", () => {
     it("Should have set all layers", async () => {
       const layers = getLayers();
       for (let i = 0; i < layers.length; i++) {
-        const { name, data } = await renderer.getLayer(
-          layers[i].layerIndex,
-          layers[i].itemIndex,
-        );
-        expect(name).to.equal(layers[i].name);
-        expect(data).to.equal(layers[i].data);
+        expect(
+          await renderer.getLayer(layers[i].layerIndex, layers[i].itemIndex),
+        ).to.equal(layers[i].data);
       }
     });
   });
@@ -165,6 +162,7 @@ describe("Tejiverse", () => {
         },
         123,
       );
+      console.log(uri);
       expect(uri.startsWith("data:application/json;base64,")).to.be.true;
     });
   });

@@ -2,7 +2,6 @@ import path from "path";
 import fs from "fs";
 
 type LayerInput = {
-  name: string;
   data: string;
   layerIndex: number;
   itemIndex: number;
@@ -12,7 +11,6 @@ export default function getLayers(): LayerInput[] {
   const layers: LayerInput[] = [];
 
   for (const [layerIndex, traitName] of [
-    "Background",
     "Clothes",
     "Eyes",
     "Hat",
@@ -24,10 +22,8 @@ export default function getLayers(): LayerInput[] {
     for (const [itemIndex, f] of files.entries()) {
       const fpath = path.join(dirpath, f);
 
-      const name = path.parse(f).name;
       const data = fs.readFileSync(fpath, "base64");
       const layer: LayerInput = {
-        name,
         data,
         layerIndex,
         itemIndex,
