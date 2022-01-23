@@ -12,6 +12,7 @@ export default function getLayers(): LayerInput[] {
   const layers: LayerInput[] = [];
 
   for (const [layerIndex, traitName] of [
+    "Background",
     "Clothes",
     "Eyes",
     "Hat",

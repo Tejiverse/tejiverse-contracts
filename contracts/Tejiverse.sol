@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import "sol-temple/src/tokens/ERC721Upgradable.sol";
-import "sol-temple/src/utils/Upgradable.sol";
+import "base64-sol/base64.sol";
 import "sol-temple/src/utils/Proxy.sol";
-
+import "sol-temple/src/utils/Upgradable.sol";
+import "sol-temple/src/tokens/ERC721Upgradable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+
+import "./TejiverseRenderer.sol";
+import "./TejiverseTypes.sol";
 
 /**
  * @title Tejiverse
@@ -21,28 +24,13 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
   using MerkleProof for bytes32[];
 
   /// @notice Max supply.
-  uint256 public constant SUPPLY_MAX = 1000;
+  uint256 public constant TEJI_MAX = 1000;
 
-  /// @notice Max amount per claim (not whitelist).
-  uint256 public constant CLAIM_PER_TX = 3;
+  /// @notice Max amount per claim.
+  uint256 public constant TEJI_PER_TX = 3;
 
   /// @notice 0 = CLOSED, 1 = WHITELIST, 2 = PUBLIC.
   uint256 public saleState;
-
-  /// @notice Metadata base URI.
-  string public baseURI;
-
-  /// @notice Metadata URI extension.
-  string public baseExtension;
-
-  /// @notice Unrevealed metadata URI.
-  string public unrevealedURI;
-
-  /// @notice Whitelist merkle root.
-  bytes32 public merkleRoot;
-
-  /// @notice Whitelist mints per address.
-  mapping(address => uint256) public whitelistMinted;
 
   /// @notice OpenSea proxy registry.
   address public opensea;
@@ -53,41 +41,68 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
   /// @notice Check if marketplaces pre-approve is enabled.
   bool public marketplacesApproved = true;
 
-  function initalize(string memory unrevealedURI_, bytes32 merkleRoot_) external onlyOwner {
+  /// @notice Whitelist merkle root.
+  bytes32 public merkleRoot;
+
+  /// @notice Tejiverse's metadata renderer contract.
+  address public renderer;
+
+  /// @notice Unrevealed metadata URI.
+  string public unrevealedURI;
+
+  /// @notice Random seed used to salt DNAs.
+  uint256 public seed;
+
+  /// @notice Mapping of each teji pre-dna.
+  mapping(uint256 => uint256) internal _tejiDna;
+
+  /// @notice Whitelist mints per address.
+  mapping(address => uint256) public whitelistMinted;
+
+  function initalize(
+    address newRenderer,
+    string memory newUnrevealedURI,
+    bytes32 newMerkleRoot
+  ) external onlyOwner {
     __ERC721_init("Tejiverse", "TEJI");
 
-    unrevealedURI = unrevealedURI_;
-    merkleRoot = merkleRoot_;
+    renderer = newRenderer;
+    unrevealedURI = newUnrevealedURI;
+    merkleRoot = newMerkleRoot;
     opensea = 0xa5409ec958C83C3f309868babACA7c86DCB077c1;
     looksrare = 0xf42aa99F011A1fA7CDA90E5E98b277E306BcA83e;
-
-    _safeMint(msg.sender, 0);
   }
 
   /// @notice Claim one or more tokens.
-  function claim(uint256 amount_) external {
+  function claim(uint256 amount) external {
     uint256 supply = totalSupply;
-    require(supply + amount_ <= SUPPLY_MAX, "Max supply exceeded");
+    require(supply + amount <= TEJI_MAX, "Max supply exceeded");
     if (msg.sender != owner) {
       require(saleState == 2, "Public sale is not open");
-      require(amount_ > 0 && amount_ <= CLAIM_PER_TX, "Invalid claim amount");
+      require(amount > 0 && amount <= TEJI_PER_TX, "Invalid claim amount");
     }
 
-    for (uint256 i = 0; i < amount_; i++) _safeMint(msg.sender, supply++);
+    for (uint256 i = 0; i < amount; i++) {
+      _tejiDna[supply] = uint256(keccak256(abi.encodePacked(supply, msg.sender, block.timestamp, block.number)));
+      _safeMint(msg.sender, supply++);
+    }
   }
 
   /// @notice Claim one or more tokens for whitelisted user.
-  function claimWhitelist(uint256 amount_, bytes32[] memory proof_) external {
+  function claimWhitelist(uint256 amount, bytes32[] memory proof_) external {
     uint256 supply = totalSupply;
-    require(supply + amount_ <= SUPPLY_MAX, "Max supply exceeded");
+    require(supply + amount <= TEJI_MAX, "Max supply exceeded");
     if (msg.sender != owner) {
       require(saleState == 1, "Whitelist sale is not open");
-      require(amount_ > 0 && amount_ + whitelistMinted[msg.sender] <= CLAIM_PER_TX, "Invalid claim amount");
+      require(amount > 0 && amount + whitelistMinted[msg.sender] <= TEJI_PER_TX, "Invalid claim amount");
       require(isWhitelisted(msg.sender, proof_), "Invalid proof");
     }
 
-    whitelistMinted[msg.sender] += amount_;
-    for (uint256 i = 0; i < amount_; i++) _safeMint(msg.sender, supply++);
+    whitelistMinted[msg.sender] += amount;
+    for (uint256 i = 0; i < amount; i++) {
+      _tejiDna[supply] = uint256(keccak256(abi.encodePacked(supply, msg.sender, block.timestamp, block.number)));
+      _safeMint(msg.sender, supply++);
+    }
   }
 
   /// @notice Retrieve if `user_` is whitelisted based on his `proof_`.
@@ -96,49 +111,48 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
     return proof_.verify(merkleRoot, leaf);
   }
 
-  /**
-   * @notice See {IERC721-tokenURI}.
-   * @dev In order to make a metadata reveal, there must be an unrevealedURI string, which
-   * gets set on the constructor and, for optimization purposes, when the owner sets a new
-   * baseURI, the unrevealedURI gets deleted, saving gas and triggering a reveal.
-   */
-  function tokenURI(uint256 tokenId_) public view override returns (string memory) {
-    require(_exists(tokenId_), "ERC721Metadata: query for nonexisting token");
+  function dnaOf(uint256 id) public view returns (uint256) {
+    require(seed > 0, "Random seed not set yet");
+    return uint256(keccak256(abi.encodePacked(_tejiDna[id], seed)));
+  }
 
+  /// @notice See {IERC721-tokenURI}.
+  function tokenURI(uint256 id) public view override returns (string memory) {
+    require(_exists(id), "ERC721Metadata: query for nonexisting token");
     if (bytes(unrevealedURI).length > 0) return unrevealedURI;
-    return string(abi.encodePacked(baseURI, tokenId_.toString(), baseExtension));
+
+    TejiverseTypes.Teji memory teji = TejiverseRenderer(renderer).getTeji(dnaOf(id));
+    return TejiverseRenderer(renderer).tokenURI(teji, id);
   }
 
-  /// @notice Set baseURI to `baseURI_`, baseExtension to `baseExtension_` and deletes unrevealedURI, triggering a reveal.
-  function setBaseURI(string memory baseURI_, string memory baseExtension_) external onlyOwner {
-    baseURI = baseURI_;
-    baseExtension = baseExtension_;
-    delete unrevealedURI;
+  /// @notice Set unrevealedURI to `newUnrevealedURI`.
+  function setUnrevealedURI(string memory newUnrevealedURI) external onlyOwner {
+    unrevealedURI = newUnrevealedURI;
   }
 
-  /// @notice Set unrevealedURI to `unrevealedURI_`.
-  function setUnrevealedURI(string memory unrevealedURI_) external onlyOwner {
-    unrevealedURI = unrevealedURI_;
+  /// @notice Set seed to a pseudo-random number.
+  function setSeed() external onlyOwner {
+    seed = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)));
   }
 
-  /// @notice Set saleState to `saleState_`.
-  function setSaleState(uint256 saleState_) external onlyOwner {
-    saleState = saleState_;
+  /// @notice Set saleState to `newSaleState`.
+  function setSaleState(uint256 newSaleState) external onlyOwner {
+    saleState = newSaleState;
   }
 
-  /// @notice Set merkleRoot to `merkleRoot_`.
-  function setMerkleRoot(bytes32 merkleRoot_) external onlyOwner {
-    merkleRoot = merkleRoot_;
+  /// @notice Set merkleRoot to `newMerkleRoot`.
+  function setMerkleRoot(bytes32 newMerkleRoot) external onlyOwner {
+    merkleRoot = newMerkleRoot;
   }
 
-  /// @notice Set opensea to `opensea_`.
-  function setOpensea(address opensea_) external onlyOwner {
-    opensea = opensea_;
+  /// @notice Set opensea to `newOpensea`.
+  function setOpensea(address newOpensea) external onlyOwner {
+    opensea = newOpensea;
   }
 
-  /// @notice Set looksrare to `looksrare_`.
-  function setLooksrare(address looksrare_) external onlyOwner {
-    looksrare = looksrare_;
+  /// @notice Set looksrare to `newLooksrare`.
+  function setLooksrare(address newLooksrare) external onlyOwner {
+    looksrare = newLooksrare;
   }
 
   /// @notice Toggle pre-approve feature state for sender.
@@ -146,23 +160,23 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
     marketplacesApproved = !marketplacesApproved;
   }
 
-  /// @notice Withdraw `amount_` of `token_` to the sender.
-  function withdrawERC20(IERC20 token_, uint256 amount_) external onlyOwner {
-    token_.transfer(msg.sender, amount_);
+  /// @notice Withdraw `value` of `token` to the sender.
+  function withdrawERC20(IERC20 token, uint256 value) external onlyOwner {
+    token.transfer(msg.sender, value);
   }
 
-  /// @notice Withdraw `tokenId_` of `token_` to the sender.
-  function withdrawERC721(IERC721 token_, uint256 tokenId_) external onlyOwner {
-    token_.safeTransferFrom(address(this), msg.sender, tokenId_);
+  /// @notice Withdraw `id` of `token` to the sender.
+  function withdrawERC721(IERC721 token, uint256 id) external onlyOwner {
+    token.safeTransferFrom(address(this), msg.sender, id);
   }
 
-  /// @notice Withdraw `tokenId_` with amount of `value_` from `token_` to the sender.
+  /// @notice Withdraw `id` with `value` from `token` to the sender.
   function withdrawERC1155(
-    IERC1155 token_,
-    uint256 tokenId_,
-    uint256 value_
+    IERC1155 token,
+    uint256 id,
+    uint256 value
   ) external onlyOwner {
-    token_.safeTransferFrom(address(this), msg.sender, tokenId_, value_, "");
+    token.safeTransferFrom(address(this), msg.sender, id, value, "");
   }
 
   /// @dev Modified for opensea and looksrare pre-approve so users can make truly gasless sales.

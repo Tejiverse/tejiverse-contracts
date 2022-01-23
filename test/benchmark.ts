@@ -4,6 +4,7 @@ import keccak256 from "keccak256";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import { Tejiverse, TejiverseRenderer } from "../typechain";
+import unrevealedURI from "../assets/unrevealed.json";
 import getLayers from "../src/getLayers";
 
 function hashAccount(account: string) {
@@ -38,7 +39,10 @@ describe("Tejiverse", () => {
       ).deploy(tejiverseImpl.address);
 
       tejiverse = await ethers.getContractAt("Tejiverse", proxy.address);
-      await tejiverse.initalize("unrevealedURI", tree.getHexRoot());
+      await tejiverse.initalize(
+        JSON.stringify(unrevealedURI),
+        tree.getHexRoot(),
+      );
       tejiverse = tejiverse.connect(addr1);
     });
 
@@ -71,8 +75,9 @@ describe("Tejiverse", () => {
 
     it("setLayers()", async () => {
       const layers = getLayers();
-      for (let i = 0; i < layers.length; i += 20) {
-        await renderer.setLayers(layers.slice(i, i + 20));
+      for (let i = 0; i < layers.length; i += 10) {
+        console.log(i);
+        await renderer.setLayers(layers.slice(i, i + 10));
       }
     });
   });
