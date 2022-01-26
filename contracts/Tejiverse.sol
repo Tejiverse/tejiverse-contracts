@@ -11,9 +11,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
-import "./TejiverseRenderer.sol";
-import "./TejiverseTypes.sol";
-
 /**
  * @title Tejiverse
  * @author naomsa <https://twitter.com/naomsa666>
@@ -41,32 +38,22 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
   /// @notice Check if marketplaces pre-approve is enabled.
   bool public marketplacesApproved = true;
 
-  /// @notice Whitelist merkle root.
-  bytes32 public merkleRoot;
-
-  /// @notice Tejiverse's metadata renderer contract.
-  address public renderer;
-
   /// @notice Unrevealed metadata URI.
   string public unrevealedURI;
+  /// @notice Metadata base URI.
+  string public baseURI;
+  /// @notice Metadata base file extension.
+  string public baseExtension;
 
-  /// @notice Random seed used to salt DNAs.
-  uint256 public seed;
-
-  /// @notice Mapping of each teji pre-dna.
-  mapping(uint256 => uint256) internal _tejiDna;
+  /// @notice Whitelist merkle root.
+  bytes32 public merkleRoot;
 
   /// @notice Whitelist mints per address.
   mapping(address => uint256) public whitelistMinted;
 
-  function initalize(
-    address newRenderer,
-    string memory newUnrevealedURI,
-    bytes32 newMerkleRoot
-  ) external onlyOwner {
+  function initalize(string memory newUnrevealedURI, bytes32 newMerkleRoot) external onlyOwner {
     __ERC721_init("Tejiverse", "TEJI");
 
-    renderer = newRenderer;
     unrevealedURI = newUnrevealedURI;
     merkleRoot = newMerkleRoot;
     opensea = 0xa5409ec958C83C3f309868babACA7c86DCB077c1;
@@ -82,10 +69,7 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
       require(amount > 0 && amount <= TEJI_PER_TX, "Invalid claim amount");
     }
 
-    for (uint256 i = 0; i < amount; i++) {
-      _tejiDna[supply] = uint256(keccak256(abi.encodePacked(supply, msg.sender, block.timestamp, block.number)));
-      _safeMint(msg.sender, supply++);
-    }
+    for (uint256 i = 0; i < amount; i++) _safeMint(msg.sender, supply++);
   }
 
   /// @notice Claim one or more tokens for whitelisted user.
@@ -99,10 +83,7 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
     }
 
     whitelistMinted[msg.sender] += amount;
-    for (uint256 i = 0; i < amount; i++) {
-      _tejiDna[supply] = uint256(keccak256(abi.encodePacked(supply, msg.sender, block.timestamp, block.number)));
-      _safeMint(msg.sender, supply++);
-    }
+    for (uint256 i = 0; i < amount; i++) _safeMint(msg.sender, supply++);
   }
 
   /// @notice Retrieve if `user_` is whitelisted based on his `proof_`.
@@ -111,18 +92,12 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
     return proof_.verify(merkleRoot, leaf);
   }
 
-  function dnaOf(uint256 id) public view returns (uint256) {
-    require(seed > 0, "Random seed not set yet");
-    return uint256(keccak256(abi.encodePacked(_tejiDna[id], seed)));
-  }
-
   /// @notice See {IERC721-tokenURI}.
   function tokenURI(uint256 id) public view override returns (string memory) {
     require(_exists(id), "ERC721Metadata: query for nonexisting token");
-    if (bytes(unrevealedURI).length > 0) return unrevealedURI;
 
-    TejiverseTypes.Teji memory teji = TejiverseRenderer(renderer).getTeji(dnaOf(id));
-    return TejiverseRenderer(renderer).tokenURI(teji, id);
+    if (bytes(unrevealedURI).length > 0) return unrevealedURI;
+    return string(abi.encodePacked(baseURI, id.toString(), baseExtension));
   }
 
   /// @notice Set unrevealedURI to `newUnrevealedURI`.
@@ -130,10 +105,9 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
     unrevealedURI = newUnrevealedURI;
   }
 
-  /// @notice Set seed to a pseudo-random number and trigger the reveal.
-  function setSeed() external onlyOwner {
-    seed = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty)));
-    delete unrevealedURI;
+  /// @notice Set baseURI to `newBaseURI`.
+  function setBaseURI(string memory newBaseURI) external onlyOwner {
+    baseURI = newBaseURI;
   }
 
   /// @notice Set saleState to `newSaleState`.
