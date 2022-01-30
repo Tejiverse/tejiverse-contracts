@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import "base64-sol/base64.sol";
 import "sol-temple/src/utils/Proxy.sol";
 import "sol-temple/src/utils/Upgradable.sol";
 import "sol-temple/src/tokens/ERC721Upgradable.sol";
@@ -22,21 +21,8 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
 
   /// @notice Max supply.
   uint256 public constant TEJI_MAX = 1000;
-
   /// @notice Max amount per claim.
   uint256 public constant TEJI_PER_TX = 3;
-
-  /// @notice 0 = CLOSED, 1 = WHITELIST, 2 = PUBLIC.
-  uint256 public saleState;
-
-  /// @notice OpenSea proxy registry.
-  address public opensea;
-
-  /// @notice LooksRare marketplace transfer manager.
-  address public looksrare;
-
-  /// @notice Check if marketplaces pre-approve is enabled.
-  bool public marketplacesApproved = true;
 
   /// @notice Unrevealed metadata URI.
   string public unrevealedURI;
@@ -45,13 +31,22 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
   /// @notice Metadata base file extension.
   string public baseExtension;
 
+  /// @notice OpenSea proxy registry.
+  address public opensea;
+  /// @notice LooksRare marketplace transfer manager.
+  address public looksrare;
+  /// @notice Check if marketplaces pre-approve is enabled.
+  bool public marketplacesApproved = true;
+
+  /// @notice 0 = CLOSED, 1 = WHITELIST, 2 = PUBLIC.
+  uint256 public saleState;
+
   /// @notice Whitelist merkle root.
   bytes32 public merkleRoot;
-
   /// @notice Whitelist mints per address.
   mapping(address => uint256) public whitelistMinted;
 
-  function initalize(string memory newUnrevealedURI, bytes32 newMerkleRoot) external onlyOwner {
+  function initialize(string memory newUnrevealedURI, bytes32 newMerkleRoot) external onlyOwner {
     __ERC721_init("Tejiverse", "TEJI");
 
     unrevealedURI = newUnrevealedURI;
@@ -106,8 +101,10 @@ contract Tejiverse is Upgradable, ERC721Upgradable {
   }
 
   /// @notice Set baseURI to `newBaseURI`.
-  function setBaseURI(string memory newBaseURI) external onlyOwner {
+  function setBaseURI(string memory newBaseURI, string memory newBaseExtension) external onlyOwner {
     baseURI = newBaseURI;
+    baseExtension = newBaseExtension;
+    delete unrevealedURI;
   }
 
   /// @notice Set saleState to `newSaleState`.

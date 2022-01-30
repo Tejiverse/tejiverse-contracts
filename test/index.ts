@@ -4,9 +4,8 @@ import MerkleTree from "merkletreejs";
 import keccak256 from "keccak256";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-import { Tejiverse, TejiverseRenderer } from "../typechain";
+import { Tejiverse } from "../typechain";
 import deployProxy from "../src/deployProxy";
-import getLayers from "../src/getLayers";
 
 function hashAccount(account: string) {
   return Buffer.from(
@@ -19,7 +18,6 @@ describe("Tejiverse", () => {
   let [owner, addr1]: SignerWithAddress[] = [];
 
   let tree: MerkleTree;
-  let renderer: TejiverseRenderer;
   let tejiverse: Tejiverse;
 
   beforeEach(async () => {
@@ -31,18 +29,11 @@ describe("Tejiverse", () => {
       { sortPairs: true },
     );
 
-    tejiverse = (await deployProxy("Tejiverse")) as Tejiverse;
+    [tejiverse] = await deployProxy<Tejiverse>("Tejiverse", [
+      "unrevealedURI",
+      tree.getHexRoot(),
+    ]);
     tejiverse = tejiverse.connect(addr1);
-
-    renderer = (await deployProxy("TejiverseRenderer")) as TejiverseRenderer;
-    const layers = getLayers();
-    for (let i = 0; i < layers.length; i++) {
-      await renderer.setLayers([layers[i]]);
-    }
-
-    await tejiverse
-      .connect(owner)
-      .initalize(renderer.address, "unrevealedURI", tree.getHexRoot());
   });
 
   describe("claim()", () => {
@@ -123,48 +114,6 @@ describe("Tejiverse", () => {
           tree.getHexProof(hashAccount(owner.address)),
         ),
       ).to.be.revertedWith("Invalid proof");
-    });
-  });
-
-  describe("getLayer()", () => {
-    it("Should have set all layers", async () => {
-      const layers = getLayers();
-      for (let i = 0; i < layers.length; i++) {
-        expect(
-          await renderer.getLayer(layers[i].layerIndex, layers[i].itemIndex),
-        ).to.equal(layers[i].data);
-      }
-    });
-  });
-
-  describe("tokenSVG()", () => {
-    it("Should return the correct token SVG", async () => {
-      const svg = await renderer.tokenSVG({
-        background: 0,
-        clothes: 0,
-        eyes: 0,
-        hat: 0,
-        mouth: 0,
-      });
-
-      expect(svg.startsWith("data:image/svg+xml;base64,")).to.be.true;
-    });
-  });
-
-  describe("tokenURI() Renderer", () => {
-    it("Should return the correct token uri", async () => {
-      const uri = await renderer.tokenURI(
-        {
-          background: 0,
-          clothes: 0,
-          eyes: 0,
-          hat: 0,
-          mouth: 0,
-        },
-        123,
-      );
-
-      expect(uri.startsWith("data:application/json;base64,")).to.be.true;
     });
   });
 });
