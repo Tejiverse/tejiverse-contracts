@@ -6,11 +6,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-/**
- * @title Tejiverse
- * @author naomsa <https://twitter.com/naomsa666>
- * @author Teji <https://twitter.com/0xTeji>
- */
+/// @title Tejiverse
+/// @author naomsa <https://twitter.com/naomsa666>
+/// @author Teji <https://twitter.com/0xTeji>
 contract Tejiverse is Ownable, ERC721 {
   using Strings for uint256;
   using ECDSA for bytes32;
