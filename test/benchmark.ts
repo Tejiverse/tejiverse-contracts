@@ -1,49 +1,44 @@
 import { ethers } from "hardhat";
-import MerkleTree from "merkletreejs";
-import keccak256 from "keccak256";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import { Tejiverse } from "../typechain";
-import deployProxy from "../src/deployProxy";
-
-function hashAccount(account: string) {
-  return Buffer.from(
-    ethers.utils.solidityKeccak256(["address"], [account]).slice(2),
-    "hex",
-  );
-}
+import { BigNumberish } from "ethers";
 
 describe("Tejiverse", () => {
   let [owner, addr1]: SignerWithAddress[] = [];
-  let tree: MerkleTree;
   let tejiverse: Tejiverse;
+  let genSignature: (account: string, amount: BigNumberish) => Promise<string>;
 
   beforeEach(async () => {
     [owner, addr1] = await ethers.getSigners();
 
-    tree = new MerkleTree(
-      [owner.address, addr1.address].map((address) => hashAccount(address)),
-      keccak256,
-      { sortPairs: true },
-    );
+    tejiverse = await (
+      await ethers.getContractFactory("Tejiverse")
+    ).deploy("", owner.address);
 
-    [tejiverse] = await deployProxy<Tejiverse>("Tejiverse", [
-      "unrevealedURI",
-      tree.getHexRoot(),
-    ]);
+    genSignature = async (account: string, amount: BigNumberish) => {
+      const message = ethers.utils.solidityKeccak256(
+        ["address", "address", "uint256"],
+        [tejiverse.address, account, amount],
+      );
+      return await owner.signMessage(ethers.utils.arrayify(message));
+    };
+
     tejiverse = tejiverse.connect(addr1);
   });
 
   it("claim()", async () => {
     await tejiverse.connect(owner).setSaleState(2);
-    await tejiverse.claim(3);
+    await tejiverse.claim(await tejiverse.TEJI_PER_TX());
   });
 
   it("claimWhitelist()", async () => {
     await tejiverse.connect(owner).setSaleState(1);
+
+    const perTX = await tejiverse.TEJI_PER_TX();
     await tejiverse.claimWhitelist(
-      3,
-      tree.getHexProof(hashAccount(addr1.address)),
+      perTX,
+      await genSignature(addr1.address, perTX),
     );
   });
 });
