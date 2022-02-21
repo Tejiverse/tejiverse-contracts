@@ -1,17 +1,15 @@
-import type { Tejiverse } from "../typechain";
-import deployProxy from "../src/deployProxy";
-import getTree from "../src/getTree";
+import { ethers, network } from "hardhat";
 
 async function main() {
-  const tree = getTree();
-
-  const [tejiverse, tejiverseImpl] = await deployProxy<Tejiverse>("Tejiverse", [
-    "https://ipfs.io/ipfs/QmQmmApSZuoLvWY187yQcbJ5J1y5WUDFaRYqAw8GCoUoeQ",
-    tree.getHexRoot(),
-  ]);
-
-  console.log("Tejiverse Implementation:", tejiverseImpl.address);
+  const tejiverse = await (
+    await ethers.getContractFactory("Tejiverse")
+  ).deploy("", "0x7b85FDa7524BAfCf59d02694DdA7F323F7545149");
+  await tejiverse.deployed();
   console.log("Tejiverse:", tejiverse.address);
+
+  console.log(
+    `\nyarn hardhat verify --network ${network.name} ${tejiverse.address} "" "0x7b85FDa7524BAfCf59d02694DdA7F323F7545149"`,
+  );
 }
 
 main().catch((error) => {
