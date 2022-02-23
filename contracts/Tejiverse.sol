@@ -20,9 +20,6 @@ contract Tejiverse is Ownable, ERC721 {
   /// @notice Max supply.
   uint256 public constant TEJI_MAX = 1000;
 
-  /// @notice Max amount per claim.
-  uint256 public constant TEJI_PER_TX = 3;
-
   /* -------------------------------------------------------------------------- */
   /*                              Metadata Details                              */
   /* -------------------------------------------------------------------------- */
@@ -56,8 +53,8 @@ contract Tejiverse is Ownable, ERC721 {
   /// @notice 0 = CLOSED, 1 = WHITELIST, 2 = PUBLIC.
   uint256 public saleState;
 
-  /// @notice Whitelist mints per address.
-  mapping(address => uint256) internal _boughtPresale;
+  /// @notice address => has minted on presale.
+  mapping(address => bool) internal _boughtPresale;
 
   constructor(string memory newUnrevealedURI, address newSigner) ERC721("Tejiverse", "TEJI") {
     unrevealedURI = newUnrevealedURI;
@@ -72,33 +69,30 @@ contract Tejiverse is Ownable, ERC721 {
   /*                                 Sale Logic                                 */
   /* -------------------------------------------------------------------------- */
 
-  /// @notice Claim one or more tokens.
-  /// @param amount Amount of tokens to claim.
-  function claim(uint256 amount) external {
+  /// @notice Claim one teji.
+  function claim() external {
     uint256 supply = totalSupply;
-    require(supply + amount <= TEJI_MAX, "Tejiverse: max supply exceeded");
+    require(supply < TEJI_MAX, "Tejiverse: max supply exceeded");
     if (msg.sender != owner()) {
       require(saleState == 2, "Tejiverse: public sale is not open");
-      require(amount > 0 && amount <= TEJI_PER_TX, "Tejiverse: invalid claim amount");
     }
 
-    for (uint256 i = 0; i < amount; i++) _safeMint(msg.sender, supply++);
+    _safeMint(msg.sender, supply);
   }
 
-  /// @notice Claim one or more tokens for whitelisted user.
-  /// @param amount Amount of tokens to claim.
+  /// @notice Claim one teji with whitelist proof.
   /// @param signature Whitelist proof signature.
-  function claimWhitelist(uint256 amount, bytes memory signature) external {
+  function claimWhitelist(bytes memory signature) external {
     uint256 supply = totalSupply;
-    require(supply + amount <= TEJI_MAX, "Tejiverse: max supply exceeded");
+    require(supply < TEJI_MAX, "Tejiverse: max supply exceeded");
     require(saleState == 1, "Tejiverse: whitelist sale is not open");
-    require(amount > 0 && amount + _boughtPresale[msg.sender] <= TEJI_PER_TX, "Tejiverse: invalid claim amount");
+    require(!_boughtPresale[msg.sender], "Tejiverse: already claimed");
 
-    bytes32 digest = keccak256(abi.encodePacked(address(this), msg.sender, amount));
+    bytes32 digest = keccak256(abi.encodePacked(address(this), msg.sender));
     require(digest.toEthSignedMessageHash().recover(signature) == signer, "Tejiverse: invalid signature");
 
-    _boughtPresale[msg.sender] += amount;
-    for (uint256 i = 0; i < amount; i++) _safeMint(msg.sender, supply++);
+    _boughtPresale[msg.sender] = true;
+    _safeMint(msg.sender, supply);
   }
 
   /* -------------------------------------------------------------------------- */
