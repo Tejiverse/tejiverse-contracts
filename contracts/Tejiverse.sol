@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.11;
 
-import "sol-temple/src/tokens/ERC721.sol";
+import "erc721a/contracts/ERC721A.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -9,16 +9,9 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 /// @title Tejiverse
 /// @author naomsa <https://twitter.com/naomsa666>
 /// @author Teji <https://twitter.com/0xTeji>
-contract Tejiverse is Ownable, ERC721 {
+contract Tejiverse is Ownable, ERC721A {
   using Strings for uint256;
   using ECDSA for bytes32;
-
-  /* -------------------------------------------------------------------------- */
-  /*                                Token Details                               */
-  /* -------------------------------------------------------------------------- */
-
-  /// @notice Max supply.
-  uint256 public constant TEJI_MAX = 1000;
 
   /* -------------------------------------------------------------------------- */
   /*                              Metadata Details                              */
@@ -56,7 +49,7 @@ contract Tejiverse is Ownable, ERC721 {
   /// @notice address => has minted on presale.
   mapping(address => bool) internal _boughtPresale;
 
-  constructor(string memory newUnrevealedURI, address newSigner) ERC721("Tejiverse", "TEJI") {
+  constructor(string memory newUnrevealedURI, address newSigner) ERC721A("Tejiverse", "TEJI") {
     unrevealedURI = newUnrevealedURI;
     signer = newSigner;
 
@@ -71,20 +64,18 @@ contract Tejiverse is Ownable, ERC721 {
 
   /// @notice Claim one teji.
   function claim() external {
-    uint256 supply = totalSupply;
-    require(supply < TEJI_MAX, "Tejiverse: max supply exceeded");
+    require(_currentIndex < 1000, "Tejiverse: max supply exceeded");
     if (msg.sender != owner()) {
       require(saleState == 2, "Tejiverse: public sale is not open");
     }
 
-    _safeMint(msg.sender, supply);
+    _safeMint(msg.sender, 1);
   }
 
   /// @notice Claim one teji with whitelist proof.
   /// @param signature Whitelist proof signature.
   function claimWhitelist(bytes memory signature) external {
-    uint256 supply = totalSupply;
-    require(supply < TEJI_MAX, "Tejiverse: max supply exceeded");
+    require(_currentIndex < 1000, "Tejiverse: max supply exceeded");
     require(saleState == 1, "Tejiverse: whitelist sale is not open");
     require(!_boughtPresale[msg.sender], "Tejiverse: already claimed");
 
@@ -92,7 +83,7 @@ contract Tejiverse is Ownable, ERC721 {
     require(digest.toEthSignedMessageHash().recover(signature) == signer, "Tejiverse: invalid signature");
 
     _boughtPresale[msg.sender] = true;
-    _safeMint(msg.sender, supply);
+    _safeMint(msg.sender, 1);
   }
 
   /* -------------------------------------------------------------------------- */
