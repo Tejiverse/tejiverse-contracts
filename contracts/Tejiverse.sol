@@ -6,6 +6,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+/*   _____    _ _                           */
+/*  |_   _|  (_|_)                          */
+/*    | | ___ _ ___   _____ _ __ ___  ___   */
+/*    | |/ _ \ | \ \ / / _ \ '__/ __|/ _ \  */
+/*    | |  __/ | |\ V /  __/ |  \__ \  __/  */
+/*    \_/\___| |_| \_/ \___|_|  |___/\___|  */
+/*          _/ |                            */
+/*         |__/                             */
+
 /// @title Tejiverse
 /// @author naomsa <https://twitter.com/naomsa666>
 /// @author Teji <https://twitter.com/0xTeji>
